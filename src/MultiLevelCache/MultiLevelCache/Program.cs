@@ -3,7 +3,6 @@ using CacheTower;
 using CacheTower.Providers.Redis;
 using CacheTower.Serializers.SystemTextJson;
 using StackExchange.Redis;
-using System.Runtime.CompilerServices;
 
 namespace MultiLevelCache
 {
@@ -77,9 +76,9 @@ namespace MultiLevelCache
         }
 
         /// <summary>
-        /// Helper to highlight the CacheTower.RemoteEviction Channel redis subscription is working
+        /// Testing only to highlight the CacheTower.RemoteEviction Channel redis subscription is working
         /// </summary>
-        private static void SubscribeToCacheInvalidation(IConnectionMultiplexer redisConnection)
+        private static void SubscribeToCacheTowerRemoteEviction(IConnectionMultiplexer redisConnection)
         {
             var subscriber = redisConnection.GetSubscriber();
             subscriber.Subscribe(new RedisChannel($"CacheTower.RemoteEviction", RedisChannel.PatternMode.Literal), async (channel, message) =>
@@ -93,7 +92,8 @@ namespace MultiLevelCache
         {
             var redisConnection = ConnectionMultiplexer.Connect(RedisConnString);
 
-            SubscribeToCacheInvalidation(redisConnection);
+            // for testing purposes subscribe to cachetower remote eviction
+            SubscribeToCacheTowerRemoteEviction(redisConnection);
 
             services.AddCacheStack(builder => builder
                 // uses local system memory as cache layer
