@@ -10,7 +10,7 @@ namespace MultiLevelCache
     {
 
         // note: would be retrived using secure method
-        private const string RedisConnString = "{REDIS_CONN_STRING_HERE}";
+        private const string RedisConnString = "{REDIS_CONN_STRING}";
         private const string KeyPrefix = "KeyPrefix_";
   
         private static ICacheStack? _cacheStack;
@@ -100,11 +100,13 @@ namespace MultiLevelCache
                 .AddMemoryCacheLayer()
                 // uses Redis as distributed cache layer
                 .AddRedisCacheLayer(redisConnection, new RedisCacheLayerOptions(SystemTextJsonCacheSerializer.Instance))
+                // uses Redis for distributed locking (to avoid cache stampedes)
+                .WithRedisDistributedLocking(redisConnection)
                 // ensures cache invalidation is propagated across instances and layers
                 .WithRedisRemoteEviction(redisConnection)
                 // cleans up cache every 7 days across all layers (memory and Redis)
                 .WithCleanupFrequency(TimeSpan.FromDays(7))
-            ); ;
+            );
 
         }
 
