@@ -22,7 +22,7 @@ A .Net web api sample based on the asp.net core weather controller template.
 There are two [api methods](https://github.com/keithpatton/multilevelcache/blob/main/src/MultiLevelCache/MultiLevelCacheApi/Controllers/WeatherForecastController.cs) which demonstrate the basic functionality:
 
 - GetForecast - Gets/Sets forecasts from/to cache and returns them
-- GetForecastWithRefresh - Attempts to evict the forecasts from cache and ensures fresh forecasts are placed in cache and retruned.
+- GetForecastWithRefresh - Attempts to evict the forecasts from cache and ensures fresh forecasts are placed in cache and returned.
 
 This sample shows also:
 
