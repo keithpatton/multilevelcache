@@ -3,7 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.8.34309.116
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MultiLevelCache", "MultiLevelCache\MultiLevelCache.csproj", "{611DC7A2-907D-4F10-9F49-52E2D7E5F5B5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MultiLevelCache", "MultiLevelCache\MultiLevelCache.csproj", "{611DC7A2-907D-4F10-9F49-52E2D7E5F5B5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MultiLevelCacheApi", "MultiLevelCacheApi\MultiLevelCacheApi.csproj", "{18793B8B-CBB1-4F54-A753-B42527FD06EB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MultiLevelCacheApi.Tests", "MultiLevelCacheApi.Tests\MultiLevelCacheApi.Tests.csproj", "{EF4EDF5C-F560-45E8-A631-9D9D8AC04E95}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +19,14 @@ Global
 		{611DC7A2-907D-4F10-9F49-52E2D7E5F5B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{611DC7A2-907D-4F10-9F49-52E2D7E5F5B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{611DC7A2-907D-4F10-9F49-52E2D7E5F5B5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{18793B8B-CBB1-4F54-A753-B42527FD06EB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{18793B8B-CBB1-4F54-A753-B42527FD06EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{18793B8B-CBB1-4F54-A753-B42527FD06EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{18793B8B-CBB1-4F54-A753-B42527FD06EB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EF4EDF5C-F560-45E8-A631-9D9D8AC04E95}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EF4EDF5C-F560-45E8-A631-9D9D8AC04E95}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EF4EDF5C-F560-45E8-A631-9D9D8AC04E95}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EF4EDF5C-F560-45E8-A631-9D9D8AC04E95}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
