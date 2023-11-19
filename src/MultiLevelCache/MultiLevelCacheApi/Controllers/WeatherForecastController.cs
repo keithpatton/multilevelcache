@@ -56,6 +56,7 @@ namespace MultiLevelCacheApi.Controllers
         private async Task<IEnumerable<WeatherForecast>> FetchForecastAsync(IEnumerable<WeatherForecast> oldWeatherForecast)
         {
             // Simulating a delay, e.g., for a database call or external API request
+            // Note: This method can be called on a background thread when refreshing so carefully consider thread safety/context
             await Task.Delay(500);
 
             var forecast = Enumerable.Range(1, 5).Select(index => new WeatherForecast
