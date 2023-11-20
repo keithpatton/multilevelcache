@@ -28,6 +28,7 @@ This sample shows also:
 
 - Configuration of Redis and Cache Tower in [Program.cs](https://github.com/keithpatton/multilevelcache/blob/main/src/MultiLevelCache/MultiLevelCacheApi/Program.cs) with recommended options
 - Using of an [ICacheService](https://github.com/keithpatton/multilevelcache/blob/main/src/MultiLevelCache/MultiLevelCacheApi/Abstractions/ICacheService.cs)/[CacheService](https://github.com/keithpatton/multilevelcache/blob/main/src/MultiLevelCache/MultiLevelCacheApi/Services/CacheService.cs) to wrap the CacheTower ICacheStack (e.g. allowing for custom key prefixes to be added)
+- Polly Retry Policy added to CacheService to improve resiliency for Redis Cache failures
 - Use of [CacheOptions](https://github.com/keithpatton/multilevelcache/blob/main/src/MultiLevelCache/MultiLevelCacheApi/Options/CacheOptions.cs) class to encapsulate the core configuration values (e.g. TimetoLive, StaleAfter, KeyPrefix) injected into CacheService
 
 - Note: You can add the Redis Connection String into the [appsettings.json](https://github.com/keithpatton/multilevelcache/blob/main/src/MultiLevelCache/MultiLevelCacheApi/appsettings.json) (or user secrets locally by updating as follows):
