@@ -57,10 +57,20 @@ namespace MultiLevelCacheApi.Services
 
         public async ValueTask<T> GetOrSetAsync<T>(string cacheKey, Func<T, Task<T>> valueFactory, CacheSettings settings)
         {
-            return await _retryPolicy.ExecuteAsync(async () =>
+            try
             {
-                return await _cacheStack.GetOrSetAsync<T>(CreateCacheKey(cacheKey), valueFactory, settings);
-            });
+                return await _retryPolicy.ExecuteAsync(async () =>
+                {
+                    return await _cacheStack.GetOrSetAsync(CreateCacheKey(cacheKey), valueFactory, settings);
+                });
+            }
+            catch (Exception ex)
+            {
+                // Log Exception Here
+
+                // Fallback to direct use of valueFactory
+                return await valueFactory(default!);
+            }
         }
 
         private string CreateCacheKey(string cacheKey)
