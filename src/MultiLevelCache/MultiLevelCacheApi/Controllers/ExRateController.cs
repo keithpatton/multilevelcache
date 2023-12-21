@@ -10,7 +10,6 @@ namespace MultiLevelCacheApi.Controllers
     public class ExRateController : ControllerBase
     {
 
-
         private readonly ILogger<WeatherForecastController> _logger;
         private readonly ICacheService _cacheService;
 
@@ -22,11 +21,11 @@ namespace MultiLevelCacheApi.Controllers
         }
 
         [HttpGet("GetExRate")]
-        public async Task<Dictionary<string, decimal>?> GetAsync(string baseCurrency)
+        public async Task<decimal> GetExRateAsync(string fromCurrency, string toCurrency)
         {
-            return await GetOrSetExRate(baseCurrency);
+            var usdRates = await GetOrSetExRate("USD");
+            return GetExRateConversion(fromCurrency, toCurrency, usdRates!);
         }
-
 
         /// <summary>
         /// ensures forecast is retrieved from cache, fetching if necessary
@@ -35,7 +34,7 @@ namespace MultiLevelCacheApi.Controllers
         {
             var rates = await _cacheService.GetOrSetAsync<Dictionary<string, decimal>>(
                 cacheKey: baseCurrency,
-                valueFactory: async (oldRates) => { return await FetchExRate(oldRates, baseCurrency); },
+                valueFactory: async (oldRates) => { return await FetchExRateAsync(oldRates, baseCurrency); },
                 settings: _cacheService.GetCacheSettingsDefault());
 
             return rates;
@@ -44,11 +43,11 @@ namespace MultiLevelCacheApi.Controllers
         /// <summary>
         /// fetches currency from api
         /// </summary>
-        private async Task<Dictionary<string, decimal>?> FetchExRate(Dictionary<string, decimal> oldRates, string baseCurrency)
+        private async Task<Dictionary<string, decimal>?> FetchExRateAsync(Dictionary<string, decimal> oldRates, string baseCurrency)
         {
             try
             {
-                var fx = new Freecurrencyapi("API KEY");
+                var fx = new Freecurrencyapi("");
                 var rates = fx.Latest(baseCurrency);
 
                 using (JsonDocument doc = JsonDocument.Parse(rates))
@@ -69,6 +68,22 @@ namespace MultiLevelCacheApi.Controllers
             }
             return oldRates;
         }
+
+        private decimal GetExRateConversion(string fromCurrency, string toCurrency, Dictionary<string, decimal> exchangeRates)
+        {
+            if (!exchangeRates.ContainsKey(fromCurrency) || !exchangeRates.ContainsKey(toCurrency))
+            {
+                throw new ArgumentException("Currency code not found in exchange rates.");
+            }
+
+            decimal rateFromCurrencyToUSD = exchangeRates[fromCurrency];
+            decimal rateToCurrencyToUSD = exchangeRates[toCurrency];
+
+            decimal rateFromCurrencyToCurrency = rateToCurrencyToUSD / rateFromCurrencyToUSD;
+
+            return rateFromCurrencyToCurrency;
+        }
+
 
     }
 }
