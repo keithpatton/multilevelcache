@@ -1,6 +1,8 @@
 using freecurrencyapi;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using MultiLevelCacheApi.Abstractions;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 
 namespace MultiLevelCacheApi.Controllers
@@ -21,10 +23,18 @@ namespace MultiLevelCacheApi.Controllers
         }
 
         [HttpGet("GetExRate")]
-        public async Task<decimal> GetExRateAsync(string fromCurrency, string toCurrency)
+        public async Task<ActionResult<decimal>> GetExRateAsync(string fromCurrency, string toCurrency)
         {
-            var usdRates = await GetOrSetExRate("USD"); // from cache or api (will be memory most of the time)
-            return GetExRateConversion(fromCurrency, toCurrency, usdRates!); // in memory conversion
+            try
+            {
+                var usdRates = await GetOrSetExRate("USD");
+                return Ok(GetExRateConversion(fromCurrency, toCurrency, usdRates!)); 
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                _logger.LogError(ex, "Unable to calculate exchange rate");
+                return BadRequest("An invalid currency code was supplied"); 
+            }
         }
 
         /// <summary>
@@ -47,15 +57,15 @@ namespace MultiLevelCacheApi.Controllers
         {
             try
             {
+                // replace with professional api call!
                 var fx = new Freecurrencyapi("fca_live_lO9fhw4RTrg2bs4ymt6oxCPh2DQblV2bbujmrir8");
-                var rates = fx.Latest(baseCurrency);
+                var rates = await Task.FromResult(fx.Latest(baseCurrency));
 
                 using (JsonDocument doc = JsonDocument.Parse(rates))
                 {
                     var root = doc.RootElement;
                     var ratesElement = root.GetProperty("data");
-                    var ratesDictionary = ratesElement.Deserialize<Dictionary<string, decimal>>();
-                    return await Task.FromResult(ratesDictionary);
+                    return ratesElement.Deserialize<Dictionary<string, decimal>>();
                 }
             }
             catch (JsonException ex)
@@ -69,21 +79,28 @@ namespace MultiLevelCacheApi.Controllers
             return oldRates;
         }
 
+        /// <summary>
+        /// Performs a currency conversion using rates collection
+        /// </summary>
+        /// <param name="fromCurrency">Source Currency</param>
+        /// <param name="toCurrency">Target Currency</param>
+        /// <param name="exchangeRates">Exchange Rates</param>
+        /// <returns>The exchange rate between the two supplied currencies</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private decimal GetExRateConversion(string fromCurrency, string toCurrency, Dictionary<string, decimal> exchangeRates)
         {
-            if (!exchangeRates.ContainsKey(fromCurrency) || !exchangeRates.ContainsKey(toCurrency))
+            if (!exchangeRates.TryGetValue(fromCurrency, out decimal rateFromCurrencyToBaseRate))
             {
-                throw new ArgumentException("Currency code not found in exchange rates.");
+                throw new ArgumentOutOfRangeException(nameof(fromCurrency), $"Currency code {fromCurrency} not found in exchange rates.");
             }
 
-            decimal rateFromCurrencyToUSD = exchangeRates[fromCurrency];
-            decimal rateToCurrencyToUSD = exchangeRates[toCurrency];
+            if (!exchangeRates.TryGetValue(toCurrency, out decimal rateToCurrencyToBaseRate))
+            {
+                throw new ArgumentOutOfRangeException(nameof(toCurrency), $"Currency code {toCurrency} not found in exchange rates.");
+            }
 
-            decimal rateFromCurrencyToCurrency = rateToCurrencyToUSD / rateFromCurrencyToUSD;
-
-            return rateFromCurrencyToCurrency;
+            return rateToCurrencyToBaseRate / rateFromCurrencyToBaseRate;
         }
-
 
     }
 }
