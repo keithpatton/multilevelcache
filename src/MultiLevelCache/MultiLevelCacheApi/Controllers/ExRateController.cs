@@ -14,7 +14,6 @@ namespace MultiLevelCacheApi.Controllers
         private readonly ILogger<WeatherForecastController> _logger;
         private readonly ICacheService _cacheService;
 
-        private const string _cacheKey = "weather_forecast";
 
         public ExRateController(ILogger<WeatherForecastController> logger, ICacheService cacheService)
         {
@@ -35,7 +34,7 @@ namespace MultiLevelCacheApi.Controllers
         private async Task<Dictionary<string, decimal>?> GetOrSetExRate(string baseCurrency)
         {
             var rates = await _cacheService.GetOrSetAsync<Dictionary<string, decimal>>(
-                cacheKey: _cacheKey,
+                cacheKey: baseCurrency,
                 valueFactory: async (oldRates) => { return await FetchExRate(oldRates, baseCurrency); },
                 settings: _cacheService.GetCacheSettingsDefault());
 
@@ -70,5 +69,6 @@ namespace MultiLevelCacheApi.Controllers
             }
             return oldRates;
         }
+
     }
 }
