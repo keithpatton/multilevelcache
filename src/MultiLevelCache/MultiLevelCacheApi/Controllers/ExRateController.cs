@@ -23,8 +23,8 @@ namespace MultiLevelCacheApi.Controllers
         [HttpGet("GetExRate")]
         public async Task<decimal> GetExRateAsync(string fromCurrency, string toCurrency)
         {
-            var usdRates = await GetOrSetExRate("USD");
-            return GetExRateConversion(fromCurrency, toCurrency, usdRates!);
+            var usdRates = await GetOrSetExRate("USD"); // from cache or api (will be memory most of the time)
+            return GetExRateConversion(fromCurrency, toCurrency, usdRates!); // in memory conversion
         }
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace MultiLevelCacheApi.Controllers
         {
             try
             {
-                var fx = new Freecurrencyapi("");
+                var fx = new Freecurrencyapi("fca_live_lO9fhw4RTrg2bs4ymt6oxCPh2DQblV2bbujmrir8");
                 var rates = fx.Latest(baseCurrency);
 
                 using (JsonDocument doc = JsonDocument.Parse(rates))
