@@ -12,6 +12,7 @@
     <PackageReference Include="CacheTower.Extensions.Redis" Version="0.14.0" />
     <PackageReference Include="CacheTower.Providers.Redis" Version="0.14.0" />
     <PackageReference Include="CacheTower.Serializers.SystemTextJson" Version="0.14.0" />
+    <PackageReference Include="freecurrencyapi" Version="1.0.0" />
     <PackageReference Include="Polly" Version="8.2.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   </ItemGroup>
