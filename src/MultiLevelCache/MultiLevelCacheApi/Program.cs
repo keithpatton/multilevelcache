@@ -29,7 +29,7 @@ namespace MultiLevelCacheApi
                 .AddMemoryCacheLayer()
                 // uses Redis as distributed cache layer
                 .AddRedisCacheLayer(redisConnection, new RedisCacheLayerOptions(SystemTextJsonCacheSerializer.Instance))
-                // uses Redis for distributed locking (to avoid cache stampedes)
+                    // ensures cache invalidation is propagated across instances and layers
                 .WithRedisDistributedLocking(redisConnection)
                 // ensures cache invalidation is propagated across instances and layers
                 .WithRedisRemoteEviction(redisConnection)
