@@ -19,9 +19,11 @@ namespace MultiLevelCacheApi.Services
         private ICacheStack _cacheStack;
         private CacheOptions _cacheOptions;
         private readonly AsyncRetryPolicy _retryPolicy;
+        private readonly ILogger<CacheService> _logger;
 
-        public CacheService(ICacheStack cacheStack, IOptions<CacheOptions> options)
+        public CacheService(ICacheStack cacheStack, IOptions<CacheOptions> options, ILogger<CacheService> logger)
         {
+            _logger = logger;
             _cacheStack = cacheStack;
             _cacheOptions = options.Value;
 
@@ -36,7 +38,7 @@ namespace MultiLevelCacheApi.Services
                     retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), // Exponential back-off
                     onRetry: (exception, timeSpan, retryCount, context) =>
                     {
-                        // Optional: Log the retry attempt
+                        _logger.LogWarning(exception, $"Retry Attempt {retryCount}");
                     }
                 );
         }
@@ -52,7 +54,6 @@ namespace MultiLevelCacheApi.Services
             {
                 await _cacheStack.EvictAsync(CreateCacheKey(cacheKey));
             });
-           
         }
 
         public async ValueTask<T> GetOrSetAsync<T>(string cacheKey, Func<T, Task<T>> valueFactory, CacheSettings settings)
@@ -66,9 +67,10 @@ namespace MultiLevelCacheApi.Services
             }
             catch (Exception ex)
             {
-                // Log Exception Here
+                _logger.LogError(ex, $"Unable to get/set value for {cacheKey}.");
 
-                // Fallback to direct use of valueFactory
+                // Fallback to using store directly
+                _logger.LogWarning("Cache unavailable so using backing store call");
                 return await valueFactory(default!);
             }
         }

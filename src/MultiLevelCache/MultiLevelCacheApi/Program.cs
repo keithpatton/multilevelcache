@@ -1,6 +1,7 @@
 using CacheTower.Providers.Redis;
 using CacheTower.Serializers.SystemTextJson;
 using MultiLevelCacheApi.Abstractions;
+using MultiLevelCacheApi.Middleware;
 using MultiLevelCacheApi.Options;
 using MultiLevelCacheApi.Services;
 using StackExchange.Redis;
@@ -19,23 +20,32 @@ namespace MultiLevelCacheApi
 
             // *** MULTI-LEVEL CACHE CONFIGURATION START ***
 
-            // create redis connection
-            var redisConnectionString = builder.Configuration.GetSection("Cache")["RedisConnectionString"];
-            var redisConnection = ConnectionMultiplexer.Connect(redisConnectionString);
+            // add lazy initialised Redis Connection
+            builder.Services.AddSingleton(serviceProvider =>
+            {
+                return new Lazy<ConnectionMultiplexer>(() =>
+                {
+                    var redisConnectionString = builder.Configuration.GetSection("Cache")["RedisConnectionString"];
+                    return ConnectionMultiplexer.Connect(redisConnectionString);
+                });
+            });
 
-            // register cache tower
-            builder.Services.AddCacheStack(builder => builder
-                // uses local system memory as cache layer
-                .AddMemoryCacheLayer()
-                // uses Redis as distributed cache layer
-                .AddRedisCacheLayer(redisConnection, new RedisCacheLayerOptions(SystemTextJsonCacheSerializer.Instance))
+            // add cache stack
+            builder.Services.AddCacheStack((serviceProvider, stackBuilder) =>
+            {
+                var redisConnection = serviceProvider.GetRequiredService<Lazy<ConnectionMultiplexer>>().Value;
+                stackBuilder
+                    // uses local system memory as cache layer
+                    .AddMemoryCacheLayer()
+                    // uses Redis as distributed cache layer
+                    .AddRedisCacheLayer(redisConnection, new RedisCacheLayerOptions(SystemTextJsonCacheSerializer.Instance))
+                    // uses Redis for distributed locking (to avoid cache stampedes)
+                    .WithRedisDistributedLocking(redisConnection)
                     // ensures cache invalidation is propagated across instances and layers
-                .WithRedisDistributedLocking(redisConnection)
-                // ensures cache invalidation is propagated across instances and layers
-                .WithRedisRemoteEviction(redisConnection)
-                // cleans up cache every 7 days across all layers (memory and Redis)
-                .WithCleanupFrequency(TimeSpan.FromDays(7))
-            );
+                    .WithRedisRemoteEviction(redisConnection)
+                    // cleans up cache every 7 days across all layers (memory and Redis)
+                    .WithCleanupFrequency(TimeSpan.FromDays(7));
+            });
 
             // cache options class
             builder.Services.Configure<CacheOptions>(builder.Configuration.GetSection("Cache"));
@@ -52,6 +62,7 @@ namespace MultiLevelCacheApi
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+            app.UseMiddleware<ExceptionHandlingMiddleware>();
             app.UseHttpsRedirection();
             app.UseAuthorization();
             app.MapControllers();

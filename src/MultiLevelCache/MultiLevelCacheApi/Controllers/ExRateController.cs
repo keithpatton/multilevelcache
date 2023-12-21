@@ -14,7 +14,7 @@ namespace MultiLevelCacheApi.Controllers
 
         private readonly ILogger<WeatherForecastController> _logger;
         private readonly ICacheService _cacheService;
-        private const string _baseCurrency = "EUR";
+        private const string _baseCurrency = "USD";
 
         public ExRateController(ILogger<WeatherForecastController> logger, ICacheService cacheService)
         {
@@ -36,7 +36,7 @@ namespace MultiLevelCacheApi.Controllers
                 _logger.LogError(ex, "Unable to perform currency conversion");
                 return BadRequest(ex.Message);
             }
-            catch (CurrencyFetchException ex)
+            catch (ExRatesFetchException ex)
             {
                 _logger.LogError(ex, "Error occurred while fetching exchange rates");
                 return StatusCode(StatusCodes.Status500InternalServerError, "Error occurred while processing your request.");
@@ -63,7 +63,7 @@ namespace MultiLevelCacheApi.Controllers
         {
             try
             {
-                // replace with professional api call and use Polly Retry for resilience
+                // replace with professional api call and use Polly Retry for resilience on the api call
                 var fx = new Freecurrencyapi("fca_live_lO9fhw4RTrg2bs4ymt6oxCPh2DQblV2bbujmrir8");
                 var ratesString = await Task.FromResult(fx.Latest(baseCurrency));
 
@@ -106,10 +106,8 @@ namespace MultiLevelCacheApi.Controllers
             }
 
             // all hope is lost, we weren't able to fetch any rates fresh from vendor api or from cache
-            throw new CurrencyFetchException($"Unable to fetch exchange rates for {baseCurrency}");
-
+            throw new ExRatesFetchException($"Unable to fetch exchange rates for {baseCurrency}");
         }
-
 
         /// <summary>
         /// Performs a currency conversion using rates collection
