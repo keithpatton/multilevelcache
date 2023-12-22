@@ -4,7 +4,6 @@ using MultiLevelCacheApi.Abstractions;
 using MultiLevelCacheApi.Middleware;
 using MultiLevelCacheApi.Options;
 using MultiLevelCacheApi.Services;
-using Polly;
 using StackExchange.Redis;
 
 namespace MultiLevelCacheApi

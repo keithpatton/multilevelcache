@@ -4,7 +4,9 @@ using Microsoft.Extensions.Options;
 using MultiLevelCacheApi.Abstractions;
 using MultiLevelCacheApi.Options;
 using Polly;
+using Polly.CircuitBreaker;
 using Polly.Retry;
+using Polly.Wrap;
 using StackExchange.Redis;
 
 namespace MultiLevelCacheApi.Services
@@ -19,9 +21,11 @@ namespace MultiLevelCacheApi.Services
     {
         private ICacheStack _cacheStack;
         private CacheOptions _cacheOptions;
-        private readonly AsyncRetryPolicy _retryPolicy;
         private readonly ILogger<CacheService> _logger;
         private readonly IMemoryCache _memCache;
+        private readonly AsyncPolicyWrap _resiliencePolicy;
+        private readonly AsyncRetryPolicy _retryPolicy;
+        private readonly AsyncCircuitBreakerPolicy _circuitBreakerPolicy;
 
         public CacheService(ICacheStack cacheStack, IMemoryCache memCache, IOptions<CacheOptions> options, ILogger<CacheService> logger)
         {
@@ -45,6 +49,29 @@ namespace MultiLevelCacheApi.Services
                         _logger.LogWarning(exception, $"Retry Attempt {retryCount}");
                     }
                 );
+
+            _circuitBreakerPolicy = Policy
+                .Handle<RedisException>()
+                .Or<RedisTimeoutException>()
+                .CircuitBreakerAsync(
+                    5, // Threshold for opening the circuit
+                    TimeSpan.FromMinutes(5), // Duration the circuit will stay open
+                    onBreak: (exception, timespan) =>
+                    {
+                        _logger.LogWarning($"Circuit broken due to {exception.GetType().Name}");
+                    },
+                    onReset: () =>
+                    {
+                        _logger.LogInformation("Circuit reset");
+                    },
+                    onHalfOpen: () =>
+                    {
+                        _logger.LogInformation("Circuit is half-open");
+                    }
+                );
+
+            _resiliencePolicy = _circuitBreakerPolicy.WrapAsync(_retryPolicy);
+
         }
 
         public CacheSettings GetCacheSettingsDefault()
@@ -54,7 +81,7 @@ namespace MultiLevelCacheApi.Services
 
         public async ValueTask EvictAsync(string cacheKey)
         {
-            await _retryPolicy.ExecuteAsync(async () =>
+            await _resiliencePolicy.ExecuteAsync(async () =>
             {
                 await _cacheStack.EvictAsync(CreateCacheKey(cacheKey));
             });
@@ -64,7 +91,7 @@ namespace MultiLevelCacheApi.Services
         {
             try
             {
-                return await _retryPolicy.ExecuteAsync(async () =>
+                return await _resiliencePolicy.ExecuteAsync(async () =>
                 {
                     var cacheValue = await _cacheStack.GetOrSetAsync(CreateCacheKey(cacheKey), valueFactory, settings);
                     _memCache.Set(CreateCacheKey(cacheKey), cacheValue, _cacheOptions.StoreBufferDefault);
