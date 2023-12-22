@@ -1,4 +1,5 @@
 ﻿using CacheTower;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using MultiLevelCacheApi.Abstractions;
 using MultiLevelCacheApi.Options;
@@ -20,13 +21,15 @@ namespace MultiLevelCacheApi.Services
         private CacheOptions _cacheOptions;
         private readonly AsyncRetryPolicy _retryPolicy;
         private readonly ILogger<CacheService> _logger;
+        private readonly IMemoryCache _memCache;
 
-        public CacheService(ICacheStack cacheStack, IOptions<CacheOptions> options, ILogger<CacheService> logger)
+        public CacheService(ICacheStack cacheStack, IMemoryCache memCache, IOptions<CacheOptions> options, ILogger<CacheService> logger)
         {
 
             _logger = logger;
             _cacheStack = cacheStack;
             _cacheOptions = options.Value;
+            _memCache = memCache;
 
             // retry for Redis specific exceptions only coming from the Redis Cache Layer
             // note: be careful as the GetOrSetAsync covers the ValueFactory 
@@ -68,11 +71,19 @@ namespace MultiLevelCacheApi.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Unable to get/set value for {cacheKey}.");
-
-                // Fallback to using store directly
-                _logger.LogWarning("Cache unavailable so using backing store call");
-                return await valueFactory(default!);
+                _logger.LogError(ex, $"Unable to get/set value via cachetower for {cacheKey}.");
+                if (_memCache.TryGetValue<T?>(CreateCacheKey(cacheKey), out var storeValue))
+                {
+                    _logger.LogWarning("Cachetower unavailable so returning from local memory cache");
+                    return storeValue!;
+                }
+                else
+                {
+                    _logger.LogWarning("Cachetower unavailable as well as local memory cache, using backing store call");
+                    storeValue = await valueFactory(default!);
+                    _memCache.Set(CreateCacheKey(cacheKey), storeValue, _cacheOptions.StoreBufferDefault);
+                }
+                return storeValue;
             }
         }
 

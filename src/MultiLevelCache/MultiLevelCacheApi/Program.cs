@@ -19,6 +19,7 @@ namespace MultiLevelCacheApi
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
+
             // *** MULTI-LEVEL CACHE CONFIGURATION START ***
 
             // add lazy initialised Redis Connection
@@ -55,6 +56,8 @@ namespace MultiLevelCacheApi
             // facade class around cache stack
             builder.Services.AddSingleton<ICacheService, CacheService>();
 
+            // used by cache service for internal memory cache fallback (to avoid repeated backing store calls)
+            builder.Services.AddMemoryCache();
 
             // *** MULTI-LEVEL CACHE CONFIGURATION END ***
 
