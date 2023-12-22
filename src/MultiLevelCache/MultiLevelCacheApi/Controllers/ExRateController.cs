@@ -2,6 +2,8 @@ using freecurrencyapi;
 using Microsoft.AspNetCore.Mvc;
 using MultiLevelCacheApi.Abstractions;
 using MultiLevelCacheApi.Exceptions;
+using Polly;
+using Polly.Retry;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 
@@ -15,11 +17,24 @@ namespace MultiLevelCacheApi.Controllers
         private readonly ILogger<WeatherForecastController> _logger;
         private readonly ICacheService _cacheService;
         private const string _baseCurrency = "USD";
+        private readonly AsyncRetryPolicy _vendorFxApiRetryPolicy;
 
         public ExRateController(ILogger<WeatherForecastController> logger, ICacheService cacheService)
         {
             _logger = logger;
             _cacheService = cacheService;
+
+            // retry for vendor fx api  
+            _vendorFxApiRetryPolicy = Policy
+                .Handle<HttpRequestException>()
+                .WaitAndRetryAsync(
+                    3, // Number of retries
+                    retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), // Exponential back-off
+                    onRetry: (exception, timeSpan, retryCount, context) =>
+                    {
+                        _logger.LogWarning(exception, $"Retry Attempt {retryCount}");
+                    }
+                );
         }
 
         [HttpGet("GetExRate")]
@@ -35,11 +50,6 @@ namespace MultiLevelCacheApi.Controllers
             {
                 _logger.LogError(ex, "Unable to perform currency conversion");
                 return BadRequest(ex.Message);
-            }
-            catch (ExRatesFetchException ex)
-            {
-                _logger.LogError(ex, "Error occurred while fetching exchange rates");
-                return StatusCode(StatusCodes.Status500InternalServerError, "Error occurred while processing your request.");
             }
         }
 
@@ -63,9 +73,14 @@ namespace MultiLevelCacheApi.Controllers
         {
             try
             {
-                // replace with professional api call and use Polly Retry for resilience on the api call
+                // replace with professional api call!
                 var fx = new Freecurrencyapi("fca_live_lO9fhw4RTrg2bs4ymt6oxCPh2DQblV2bbujmrir8");
-                var ratesString = await Task.FromResult(fx.Latest(baseCurrency));
+                var ratesString = string.Empty;
+
+                await _vendorFxApiRetryPolicy.ExecuteAsync(async () =>
+                {
+                    ratesString = await Task.FromResult(fx.Latest(baseCurrency));
+                });
 
                 if (!string.IsNullOrWhiteSpace(ratesString))
                 {
