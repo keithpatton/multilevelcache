@@ -66,7 +66,9 @@ namespace MultiLevelCacheApi.Services
             {
                 return await _retryPolicy.ExecuteAsync(async () =>
                 {
-                    return await _cacheStack.GetOrSetAsync(CreateCacheKey(cacheKey), valueFactory, settings);
+                    var cacheValue = await _cacheStack.GetOrSetAsync(CreateCacheKey(cacheKey), valueFactory, settings);
+                    _memCache.Set(CreateCacheKey(cacheKey), cacheValue, _cacheOptions.StoreBufferDefault);
+                    return cacheValue;
                 });
             }
             catch (Exception ex)
@@ -74,12 +76,12 @@ namespace MultiLevelCacheApi.Services
                 _logger.LogError(ex, $"Unable to get/set value via cachetower for {cacheKey}.");
                 if (_memCache.TryGetValue<T?>(CreateCacheKey(cacheKey), out var storeValue))
                 {
-                    _logger.LogWarning("Cachetower unavailable so returning from local memory cache");
+                    _logger.LogWarning($"Returning {cacheKey} value from store buffer memory cache");
                     return storeValue!;
                 }
                 else
                 {
-                    _logger.LogWarning("Cachetower unavailable as well as local memory cache, using backing store call");
+                    _logger.LogWarning($"Ensuring {cacheKey} value retrieved from backing store and placed in store buffer memory cache");
                     storeValue = await valueFactory(default!);
                     _memCache.Set(CreateCacheKey(cacheKey), storeValue, _cacheOptions.StoreBufferDefault);
                 }
