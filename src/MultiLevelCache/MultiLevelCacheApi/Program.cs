@@ -4,6 +4,7 @@ using MultiLevelCacheApi.Abstractions;
 using MultiLevelCacheApi.Middleware;
 using MultiLevelCacheApi.Options;
 using MultiLevelCacheApi.Services;
+using Polly;
 using StackExchange.Redis;
 
 namespace MultiLevelCacheApi
@@ -30,7 +31,7 @@ namespace MultiLevelCacheApi
                 });
             });
 
-            // add cache stack
+            // add cache stack (mem + redis)
             builder.Services.AddCacheStack((serviceProvider, stackBuilder) =>
             {
                 var redisConnection = serviceProvider.GetRequiredService<Lazy<ConnectionMultiplexer>>().Value;
@@ -43,9 +44,10 @@ namespace MultiLevelCacheApi
                     .WithRedisDistributedLocking(redisConnection)
                     // ensures cache invalidation is propagated across instances and layers
                     .WithRedisRemoteEviction(redisConnection)
-                    // cleans up cache every 7 days across all layers (memory and Redis)
-                    .WithCleanupFrequency(TimeSpan.FromDays(7));
+                    // deletes expired data in caches (excluding redis)
+                    .WithCleanupFrequency(TimeSpan.FromMinutes(15));
             });
+
 
             // cache options class
             builder.Services.Configure<CacheOptions>(builder.Configuration.GetSection("Cache"));

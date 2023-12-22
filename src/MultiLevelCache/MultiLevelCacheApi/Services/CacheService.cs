@@ -23,6 +23,7 @@ namespace MultiLevelCacheApi.Services
 
         public CacheService(ICacheStack cacheStack, IOptions<CacheOptions> options, ILogger<CacheService> logger)
         {
+
             _logger = logger;
             _cacheStack = cacheStack;
             _cacheOptions = options.Value;
