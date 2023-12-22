@@ -84,7 +84,7 @@ namespace MultiLevelCache
         private static void SubscribeToCacheTowerRemoteEviction(IConnectionMultiplexer redisConnection)
         {
             var subscriber = redisConnection.GetSubscriber();
-            subscriber.Subscribe(new RedisChannel($"CacheTower.RemoteEviction", RedisChannel.PatternMode.Literal), async (channel, message) =>
+            subscriber.Subscribe(new RedisChannel($"CacheTower.RemoteEviction", RedisChannel.PatternMode.Literal), (channel, message) =>
             {
                 Console.WriteLine($"CacheTower.RemoteEviction: {message}");
                 Console.WriteLine("Press any key to continue....");
