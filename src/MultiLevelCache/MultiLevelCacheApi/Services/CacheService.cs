@@ -24,8 +24,6 @@ namespace MultiLevelCacheApi.Services
         private readonly ILogger<CacheService> _logger;
         private readonly IMemoryCache _memCache;
         private readonly AsyncPolicyWrap _resiliencePolicy;
-        private readonly AsyncRetryPolicy _retryPolicy;
-        private readonly AsyncCircuitBreakerPolicy _circuitBreakerPolicy;
 
         public CacheService(ICacheStack cacheStack, IMemoryCache memCache, IOptions<CacheOptions> options, ILogger<CacheService> logger)
         {
@@ -38,7 +36,7 @@ namespace MultiLevelCacheApi.Services
             // retry for Redis specific exceptions only coming from the Redis Cache Layer
             // note: be careful as the GetOrSetAsync covers the ValueFactory 
             // this  could raise wide range of exceptions and you may not want this to be retried
-            _retryPolicy = Policy
+            var retryPolicy = Policy
                 .Handle<RedisException>()
                 .Or<RedisTimeoutException>()
                 .WaitAndRetryAsync(
@@ -50,7 +48,7 @@ namespace MultiLevelCacheApi.Services
                     }
                 );
 
-            _circuitBreakerPolicy = Policy
+            var circuitBreakerPolicy = Policy
                 .Handle<RedisException>()
                 .Or<RedisTimeoutException>()
                 .CircuitBreakerAsync(
@@ -70,7 +68,7 @@ namespace MultiLevelCacheApi.Services
                     }
                 );
 
-            _resiliencePolicy = _circuitBreakerPolicy.WrapAsync(_retryPolicy);
+            _resiliencePolicy = circuitBreakerPolicy.WrapAsync(retryPolicy);
 
         }
 
