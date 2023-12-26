@@ -49,11 +49,13 @@ namespace MultiLevelCacheApi.Services
                 );
 
             var circuitBreakerPolicy = Policy
-                .Handle<RedisException>()
-                .Or<RedisTimeoutException>()
-                .CircuitBreakerAsync(
-                    5, // Threshold for opening the circuit
-                    TimeSpan.FromMinutes(5), // Duration the circuit will stay open
+                    .Handle<RedisException>()
+                    .Or<RedisTimeoutException>()
+                    .AdvancedCircuitBreakerAsync(
+                        failureThreshold: 0.1, // 10% failure rate
+                        samplingDuration: TimeSpan.FromMinutes(15), // Over a 15-minute period
+                        minimumThroughput: 100, // Minimum number of actions within the sampling period
+                        durationOfBreak: TimeSpan.FromMinutes(5), // Circuit stays open for 5 minutes
                     onBreak: (exception, timespan) =>
                     {
                         _logger.LogWarning($"Circuit broken due to {exception.GetType().Name}");
