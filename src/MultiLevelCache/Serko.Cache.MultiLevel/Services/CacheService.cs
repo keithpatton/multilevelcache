@@ -1,15 +1,14 @@
 ﻿using CacheTower;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using MultiLevelCacheApi.Abstractions;
-using MultiLevelCacheApi.Options;
 using Polly;
-using Polly.CircuitBreaker;
-using Polly.Retry;
 using Polly.Wrap;
+using Serko.Cache.MultiLevel.Abstractions;
+using Serko.Cache.MultiLevel.Options;
 using StackExchange.Redis;
 
-namespace MultiLevelCacheApi.Services
+namespace Serko.Cache.MultiLevel.Services
 {
     /// <summary>
     /// Application caching provider

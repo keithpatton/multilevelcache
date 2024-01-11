@@ -2,8 +2,8 @@
 using CacheTower;
 using Microsoft.Extensions.Logging;
 using Moq;
-using MultiLevelCacheApi.Abstractions;
 using MultiLevelCacheApi.Controllers;
+using Serko.Cache.MultiLevel.Abstractions;
 
 namespace MultiLevelCacheApi.Tests
 {

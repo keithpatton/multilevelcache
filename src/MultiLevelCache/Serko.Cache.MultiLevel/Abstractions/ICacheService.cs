@@ -1,6 +1,6 @@
 ﻿using CacheTower;
 
-namespace MultiLevelCacheApi.Abstractions
+namespace Serko.Cache.MultiLevel.Abstractions
 {
     /// <summary>
     /// Application caching abstraction

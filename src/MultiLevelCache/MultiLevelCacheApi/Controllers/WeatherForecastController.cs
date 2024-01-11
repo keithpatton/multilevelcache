@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using MultiLevelCacheApi.Abstractions;
+using Serko.Cache.MultiLevel.Abstractions;
 
 namespace MultiLevelCacheApi.Controllers
 {

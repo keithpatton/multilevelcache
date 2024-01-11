@@ -1,9 +1,9 @@
 using freecurrencyapi;
 using Microsoft.AspNetCore.Mvc;
-using MultiLevelCacheApi.Abstractions;
 using MultiLevelCacheApi.Exceptions;
 using Polly;
 using Polly.Retry;
+using Serko.Cache.MultiLevel.Abstractions;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 

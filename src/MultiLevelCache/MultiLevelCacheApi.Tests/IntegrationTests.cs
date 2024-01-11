@@ -2,8 +2,8 @@
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using MultiLevelCacheApi;
-using MultiLevelCacheApi.Options;
 using Newtonsoft.Json;
+using Serko.Cache.MultiLevel.Options;
 
 public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 {

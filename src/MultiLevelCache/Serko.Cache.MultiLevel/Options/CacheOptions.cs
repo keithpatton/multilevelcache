@@ -1,4 +1,4 @@
-﻿namespace MultiLevelCacheApi.Options
+﻿namespace Serko.Cache.MultiLevel.Options
 {
     public class CacheOptions
     {
