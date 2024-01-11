@@ -7,10 +7,8 @@ namespace Serko.Cache.MultiLevel.Abstractions
     /// </summary>
     public interface ICacheService
     {
-        ValueTask<T> GetOrSetAsync<T>(string cacheKey, Func<T, Task<T>> valueFactory, CacheSettings settings);
+        ValueTask<T> GetOrSetAsync<T>(string cacheKey, Func<T, Task<T>> valueFactory, TimeSpan? timeToLive = null, TimeSpan? staleAfter = null);
 
         ValueTask EvictAsync(string cacheKey);
-
-        CacheSettings GetCacheSettingsDefault();
     }
 }

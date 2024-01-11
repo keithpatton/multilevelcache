@@ -4,6 +4,7 @@ using MultiLevelCacheApi.Exceptions;
 using Polly;
 using Polly.Retry;
 using Serko.Cache.MultiLevel.Abstractions;
+using Serko.Cache.MultiLevel.Options;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 
@@ -16,13 +17,15 @@ namespace MultiLevelCacheApi.Controllers
 
         private readonly ILogger<WeatherForecastController> _logger;
         private readonly ICacheService _cacheService;
+        private readonly CacheOptions _cacheOptions;
         private const string _baseCurrency = "USD";
         private readonly AsyncRetryPolicy _vendorFxApiRetryPolicy;
 
-        public ExRateController(ILogger<WeatherForecastController> logger, ICacheService cacheService)
+        public ExRateController(ILogger<WeatherForecastController> logger, ICacheService cacheService, CacheOptions cacheOptions)
         {
             _logger = logger;
             _cacheService = cacheService;
+            _cacheOptions = cacheOptions;
 
             // retry for vendor fx api  
             _vendorFxApiRetryPolicy = Policy
@@ -74,8 +77,7 @@ namespace MultiLevelCacheApi.Controllers
         {
             var rates = await _cacheService.GetOrSetAsync<ExRateData>(
                 cacheKey: baseCurrency,
-                valueFactory: async (oldRates) => { return await FetchExRatesAsync(oldRates, baseCurrency); },
-                settings: _cacheService.GetCacheSettingsDefault());
+                valueFactory: async (oldRates) => { return await FetchExRatesAsync(oldRates, baseCurrency); });
 
             return rates;
         }
@@ -106,7 +108,7 @@ namespace MultiLevelCacheApi.Controllers
                         if (rates != null && rates.Any())
                         {
                             var lastModified = DateTimeOffset.UtcNow; // Or fetch this from the API response if available
-                            var expiresOn = DateTimeOffset.UtcNow.Add(_cacheService.GetCacheSettingsDefault().TimeToLive); // Expiration based on TTL settings
+                            var expiresOn = DateTimeOffset.UtcNow.Add(_cacheOptions.TimeToLiveDefault); // Expiration based on TTL settings
                             return new ExRateData(rates, lastModified, expiresOn);
                         }
                         else

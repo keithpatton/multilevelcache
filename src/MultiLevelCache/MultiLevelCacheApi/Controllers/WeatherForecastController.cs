@@ -44,8 +44,7 @@ namespace MultiLevelCacheApi.Controllers
         {
             var weatherForecast = await _cacheService.GetOrSetAsync<IEnumerable<WeatherForecast>>(
                 cacheKey: _cacheKey,
-                valueFactory: async (oldForecast) => { return await FetchForecastAsync(oldForecast); },
-                settings: _cacheService.GetCacheSettingsDefault());
+                valueFactory: async (oldForecast) => { return await FetchForecastAsync(oldForecast); });
 
             return weatherForecast;
         }

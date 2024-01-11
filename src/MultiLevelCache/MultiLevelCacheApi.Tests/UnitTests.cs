@@ -31,8 +31,12 @@ namespace MultiLevelCacheApi.Tests
             var cachedForecasts = FetchForecasts();
 
             // Set up the cache service behavior
-            _mockCacheService.Setup(x => x.GetOrSetAsync(_cacheKey, It.IsAny<Func<IEnumerable<WeatherForecast>, Task<IEnumerable<WeatherForecast>>>>(), It.IsAny<CacheSettings>()))
-                             .ReturnsAsync(() => cachedForecasts);
+            _mockCacheService.Setup(x => x.GetOrSetAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<Func<IEnumerable<WeatherForecast>, Task<IEnumerable<WeatherForecast>>>>(),
+                    It.IsAny<TimeSpan?>(),
+                    It.IsAny<TimeSpan?>()))
+                .ReturnsAsync(() => cachedForecasts);
 
             // Setup to simulate eviction
             _mockCacheService.Setup(x => x.EvictAsync(_cacheKey))

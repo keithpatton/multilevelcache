@@ -73,11 +73,6 @@ namespace Serko.Cache.MultiLevel.Services
 
         }
 
-        public CacheSettings GetCacheSettingsDefault()
-        {
-            return new CacheSettings(_cacheOptions.TimeToLiveDefault, _cacheOptions.StaleAfterDefault);
-        }
-
         public async ValueTask EvictAsync(string cacheKey)
         {
             await _resiliencePolicy.ExecuteAsync(async () =>
@@ -86,32 +81,50 @@ namespace Serko.Cache.MultiLevel.Services
             });
         }
 
-        public async ValueTask<T> GetOrSetAsync<T>(string cacheKey, Func<T, Task<T>> valueFactory, CacheSettings settings)
+        public async ValueTask<T> GetOrSetAsync<T>(string cacheKey, Func<T, Task<T>> valueFactory, TimeSpan? timeToLive = null, TimeSpan? staleAfter = null)
         {
             try
             {
+                CacheSettings? cacheSettings = null;
+                timeToLive ??= _cacheOptions.TimeToLiveDefault;
+                staleAfter ??= _cacheOptions.StaleAfterDefault;
+                if (staleAfter == null)
+                {
+                    cacheSettings = new CacheSettings(timeToLive.Value);
+                }
+                else
+                {
+                    cacheSettings = new CacheSettings(timeToLive.Value, staleAfter.Value);
+                }
+
                 return await _resiliencePolicy.ExecuteAsync(async () =>
                 {
-                    var cacheValue = await _cacheStack.GetOrSetAsync(CreateCacheKey(cacheKey), valueFactory, settings);
-                    _memCache.Set(CreateCacheKey(cacheKey), cacheValue, _cacheOptions.StoreBufferDefault);
+                    var cacheValue = await _cacheStack.GetOrSetAsync(CreateCacheKey(cacheKey), valueFactory, cacheSettings.Value);
+                    if (_cacheOptions.StoreBufferDefault.HasValue)
+                    {
+                        _ = _memCache.Set(CreateCacheKey(cacheKey), cacheValue, _cacheOptions.StoreBufferDefault.Value);
+                    }
                     return cacheValue;
                 });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Unable to get/set value via cachetower for {cacheKey}.");
-                if (_memCache.TryGetValue<T?>(CreateCacheKey(cacheKey), out var storeValue))
+                if (_cacheOptions.StoreBufferDefault.HasValue && _memCache.TryGetValue<T?>(CreateCacheKey(cacheKey), out var storeBufferValue))
                 {
                     _logger.LogWarning($"Returning {cacheKey} value from store buffer memory cache");
-                    return storeValue!;
+                    return storeBufferValue!;
                 }
                 else
                 {
                     _logger.LogWarning($"Ensuring {cacheKey} value retrieved from backing store and placed in store buffer memory cache");
-                    storeValue = await valueFactory(default!);
-                    _memCache.Set(CreateCacheKey(cacheKey), storeValue, _cacheOptions.StoreBufferDefault);
+                    var storeValue = await valueFactory(default!);
+                    if (_cacheOptions.StoreBufferDefault.HasValue)
+                    {
+                        _ = _memCache.Set(CreateCacheKey(cacheKey), storeValue, _cacheOptions.StoreBufferDefault.Value);
+                    }
+                    return storeValue!;
                 }
-                return storeValue;
             }
         }
 
