@@ -16,20 +16,22 @@ namespace Serko.Cache.MultiLevel.Services
     /// <remarks>
     /// Wraps CacheTower's CacheStack implementation
     /// </remarks>
-    public class CacheService : ICacheService
+    public class MemoryWithRedisCacheService : ICacheService
     {
         private ICacheStack _cacheStack;
         private CacheOptions _cacheOptions;
-        private readonly ILogger<CacheService> _logger;
+        private RedisCacheOptions _redisCacheOptions;
+        private readonly ILogger<MemoryWithRedisCacheService> _logger;
         private readonly IMemoryCache _memCache;
         private readonly AsyncPolicyWrap _resiliencePolicy;
 
-        public CacheService(ICacheStack cacheStack, IMemoryCache memCache, IOptions<CacheOptions> options, ILogger<CacheService> logger)
+        public MemoryWithRedisCacheService(ICacheStack cacheStack, IMemoryCache memCache, IOptions<CacheOptions> cacheOptions, IOptions<RedisCacheOptions> redisCacheOptions, ILogger<MemoryWithRedisCacheService> logger)
         {
 
             _logger = logger;
             _cacheStack = cacheStack;
-            _cacheOptions = options.Value;
+            _cacheOptions = cacheOptions.Value;
+            _redisCacheOptions = redisCacheOptions.Value;
             _memCache = memCache;
 
             // retry for Redis specific exceptions only coming from the Redis Cache Layer
@@ -39,8 +41,8 @@ namespace Serko.Cache.MultiLevel.Services
                 .Handle<RedisException>()
                 .Or<RedisTimeoutException>()
                 .WaitAndRetryAsync(
-                    3, // Number of retries
-                    retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), // Exponential back-off
+                    _redisCacheOptions.RetryCount, // Number of retries
+                    retryAttempt => TimeSpan.FromSeconds(Math.Pow(_redisCacheOptions.RetryDelay.TotalSeconds, retryAttempt)), // Exponential back-off
                     onRetry: (exception, timeSpan, retryCount, context) =>
                     {
                         _logger.LogWarning(exception, $"Retry Attempt {retryCount}");
@@ -51,9 +53,9 @@ namespace Serko.Cache.MultiLevel.Services
                     .Handle<RedisException>()
                     .Or<RedisTimeoutException>()
                     .AdvancedCircuitBreakerAsync(
-                        failureThreshold: 0.1, // 10% failure rate
-                        samplingDuration: TimeSpan.FromMinutes(15), // Over a 15-minute period
-                        minimumThroughput: 100, // Minimum number of actions within the sampling period
+                        failureThreshold: _redisCacheOptions.CircuitBreakerFailureThreshold, 
+                        samplingDuration: _redisCacheOptions.CircuitBreakerSamplingDuration, 
+                        minimumThroughput: _redisCacheOptions.CircuitBreakerMinimumThroughput, // Minimum number of actions within the sampling period
                         durationOfBreak: TimeSpan.FromMinutes(5), // Circuit stays open for 5 minutes
                     onBreak: (exception, timespan) =>
                     {
@@ -70,7 +72,6 @@ namespace Serko.Cache.MultiLevel.Services
                 );
 
             _resiliencePolicy = circuitBreakerPolicy.WrapAsync(retryPolicy);
-
         }
 
         public async ValueTask EvictAsync(string cacheKey)

@@ -1,4 +1,5 @@
-﻿using CacheTower.Providers.Redis;
+﻿using Azure.Identity;
+using CacheTower.Providers.Redis;
 using CacheTower.Serializers.SystemTextJson;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -23,9 +24,10 @@ namespace Serko.Cache.MultiLevel.Extensions
         /// <returns>The IServiceCollection for chaining.</returns>
         public static IServiceCollection AddMemoryWithRedisCache(
            this IServiceCollection services,
-           Action<CacheOptions>? cacheOptions = null) 
+           Action<CacheOptions>? cacheOptions = null,
+           Action<RedisCacheOptions>? redisCacheOptions = null) 
         {
-            return AddMemoryWithRedisCache<CacheService>(services, cacheOptions);
+            return AddMemoryWithRedisCache<MemoryWithRedisCacheService>(services, cacheOptions, redisCacheOptions);
         }
 
         /// <summary>
@@ -37,10 +39,12 @@ namespace Serko.Cache.MultiLevel.Extensions
         /// <returns>The IServiceCollection for chaining.</returns>
         public static IServiceCollection AddMemoryWithRedisCache<T>(
             this IServiceCollection services,
-            Action<CacheOptions>? cacheOptions = null
+            Action<CacheOptions>? cacheOptions = null,
+            Action<RedisCacheOptions>? redisCacheOptions = null
         ) where T : class, ICacheService
         {
             services.Configure<CacheOptions>(opts => cacheOptions?.Invoke(opts));
+            services.Configure<RedisCacheOptions>(opts => redisCacheOptions?.Invoke(opts));
             services.AddSingleton<ICacheService, T>();
 
             // used by cache service for internal memory cache fallback (to avoid repeated backing store calls)
@@ -51,8 +55,19 @@ namespace Serko.Cache.MultiLevel.Extensions
             {
                 return new Lazy<ConnectionMultiplexer>(() =>
                 {
-                    var redisConnectionString = serviceProvider.GetRequiredService<IOptions<CacheOptions>>().Value.RedisConnectionString;
-                    return ConnectionMultiplexer.Connect(redisConnectionString);
+                    var redisCacheOptions = serviceProvider.GetRequiredService<IOptions<RedisCacheOptions>>().Value;
+                    var configurationOptions = ConfigurationOptions.Parse($"{redisCacheOptions.Host}:{redisCacheOptions.Port}");
+                    configurationOptions.AbortOnConnectFail = false;
+                    configurationOptions.Ssl = true;
+                    if (!string.IsNullOrWhiteSpace(redisCacheOptions.PrincipalId))
+                    {
+                        configurationOptions.ConfigureForAzureWithTokenCredentialAsync(redisCacheOptions.PrincipalId, new DefaultAzureCredential()).GetAwaiter().GetResult();
+                    }
+                    else
+                    {
+                        configurationOptions.Password = redisCacheOptions.Password;
+                    }
+                    return ConnectionMultiplexer.Connect(configurationOptions);
                 });
             });
 

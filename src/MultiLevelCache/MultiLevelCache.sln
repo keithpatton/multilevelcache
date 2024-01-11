@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MultiLevelCacheApi", "Multi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MultiLevelCacheApi.Tests", "MultiLevelCacheApi.Tests\MultiLevelCacheApi.Tests.csproj", "{EF4EDF5C-F560-45E8-A631-9D9D8AC04E95}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Serko.Cache.MultiLevel", "Serko.Cache.MultiLevel\Serko.Cache.MultiLevel.csproj", "{AB2AE651-7527-418C-B27D-93A3E39E951F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Serko.Cache.MultiLevel", "Serko.Cache.MultiLevel\Serko.Cache.MultiLevel.csproj", "{AB2AE651-7527-418C-B27D-93A3E39E951F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

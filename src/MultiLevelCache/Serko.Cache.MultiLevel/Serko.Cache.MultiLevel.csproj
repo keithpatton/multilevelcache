@@ -7,10 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Azure.Identity" Version="1.10.4" />
     <PackageReference Include="CacheTower" Version="0.14.0" />
     <PackageReference Include="CacheTower.Extensions.Redis" Version="0.14.0" />
     <PackageReference Include="CacheTower.Providers.Redis" Version="0.14.0" />
     <PackageReference Include="CacheTower.Serializers.SystemTextJson" Version="0.14.0" />
+    <PackageReference Include="Microsoft.Azure.StackExchangeRedis" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.1" />
