@@ -15,7 +15,8 @@ namespace MultiLevelCacheApi
 
             // *** MULTI-LEVEL CACHE CONFIGURATION START ***
             builder.Services.AddMemoryWithRedisCache(
-                cacheOptions: opts => builder.Configuration.GetSection("Cache").Bind(opts)
+                cacheOptions: opts => builder.Configuration.GetSection("CacheOptions").Bind(opts),
+                redisCacheOptions: opts => builder.Configuration.GetSection("RedisCacheOptions").Bind(opts)
             );
             // *** MULTI-LEVEL CACHE CONFIGURATION END ***
 
